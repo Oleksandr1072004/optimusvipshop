@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ua">
+<head>
+    <meta charset="UTF-8" content="width-device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css" type="text/css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="icon" href="images/imgonline-com-ua-Transparent-backgr-PzvsrPq3CEMhKe.png" type="image/x-icon">
+    <script src="js/jquery-1_11_3_min.js"> </script>
+    <title id="title">OptimusVIpShop</title>
+</head>
+<body>
+<script>
+    $('document').ready(function(){
+        $("#search").focus(function() {
+          $(".search-box").addClass("border-searching");
+          $(".search-icon").addClass("si-rotate");
+        });
+        $("#search").blur(function() {
+          $(".search-box").removeClass("border-searching");
+          $(".search-icon").removeClass("si-rotate");
+        });
+        $("#search").keyup(function() {
+            if($(this).val().length > 0) {
+              $(".go-icon").addClass("go-in");
+            }
+            else {
+              $(".go-icon").removeClass("go-in");
+            }
+        });
+        $(".go-icon").click(function(){
+          $(".search-form").submit();
+        });
+
+        // Дані про автозапчастини
+        let autopartsData = [];
+        let loggedIn = false;
+        let currentUser = null;
+        let autopartsIdCounter = 1;
+
+        let allpartsauto = ['бампер','балка','телевізор','рестайлинг ','комп`ютер','волокно','фара','фари','диск','шина','шини','колесо','колеса','спойлер','дзеркало','дзеркала','капот','двері','двигун','гальма','підвіска','закис','турбо','аудіо','міст','кришка','крило','решітка','бачок','дісплей','керування','панель','блок','радіо','приладова','управління','ручник','бардачок','підсилювач','пристрій','вимикач','спідометр','перемикач','магнітола','ламп','контролер','подушка','електродвигун','рейка','плафон','модуль','коробка','фаркоп','муфта','двигун','насос','мотор','редуктор','автомат','значок','ручка','камера','вісь','піввісь','шийка','компресор','генератор','гідропідсилювач','компресор','генератор','підшипник','амортизатор','підігрів','електро','ручник','електроручник','супорт','вал','вентилятор','супорт','торпеда','турбіна','ресора','важіль','шків','накладка','форсунка','стартер','руль','радіатор','ліхтар'];
+        let modelCars = ['авто','автомобіль','фура','автобус','самоскид','капсула','мікроавтобус','спрінтер'];
+        let allmodels = ['ABT','AC Schnitzer','Acura','Alfa Romeo','Alpina','Alpine','Apex','Arrinera','Artega','Ascari','Aston Martin','Audi','BAC','BMW','Bentley','Bertone','Borgward','Bugatti','Buick','Cadilac','Carlsson','Chevrolet','Chrysler','Citroen','Covini','Dacia','Daewoo','Devon','Dodge','Donkervoort','EDAG','Edo','Elfin','FPV','Farbio','Ferrari','Fiat','Fisker','Ford','focus','GAC','Geely','Genesis','HSV','Hamann','Hennessey','Holden','Honda','Hummer','Hyundai','Icona','Infiniti','Isuzu','Iveco','Jaguar','Jeep', 'Karma','Kia','Kleemann','LCC','Lamborghini','Lancia','Land Rover','Lexus','mazda','mercedes','mercedes-Benz','mercury','mitsubishi','morgan','Nissan','Opel','Pagani','Peugeot','Porsche','Renault','Rover','Saturn','Skoda','Spada','Spyker','Subaru','Suzuki','Tata','Tesla','Toyota','Volkswagen','Volvo','Zagato','Zenvo'];
+
+        // DOM Elements
+        const addProductButton = document.getElementById("addProduct");
+        const editProductButton = document.getElementById("editProduct");
+        const addAutopartButton = document.getElementById("addAutopartsButton");
+        const editAutopartButton = document.getElementById("editAutopartsButton");
+        const autopartsForm = document.getElementById("AutopartsForm");
+        const autopartsList = document.getElementById("Autoparts-List");
+        const noveltyList = document.getElementById("Novelty-List");
+        const todayDate = new Date().toLocaleDateString('en-GB');
+        //const ShowOrHideAddEditAutopartsButton = document.getElementById("ShowOrHideAddEditAutoparts");
+
+        const signInButton = document.getElementById("signInButton");
+        const registerButton = document.getElementById("registerButton");
+        const logoutButton = document.getElementById("logoutButton");
+        const loginButton = document.getElementById("loginButton");
+        const register_Button = document.getElementById("register_Button");
+        const autopartsLink = document.getElementById("autoparts_link");
+        const autoLink = document.getElementById("auto_link");
+
+        const searchInput = document.getElementById("search");
+        searchInput.addEventListener("input", handleSearch);
+
+        // Слухачі подій
+        signInButton.addEventListener("click", signIn);
+        registerButton.addEventListener("click", register);
+        logoutButton.addEventListener("click", logout);
+        loginButton.addEventListener("click", showLoginFormEnter);
+        register_Button.addEventListener("click", showRegisterForm);
+        //ShowOrHideAddEditAutopartsButton.addEventListener("click", showAddEditAutopartsForm);
+
+        addProductButton.addEventListener("click", showAutopartsForm);
+        editProductButton.addEventListener("click", showAutopartsFormEdit);
+        editAutopartButton.addEventListener("click", editAutoParts);
+        addAutopartButton.addEventListener("click", addAutoPart);
+
+        autopartsLink.addEventListener("click", () => displayAutopartsByCategory("Автозапчастини"));
+        autoLink.addEventListener("click", () => displayAutopartsByCategory("Авто"));
+
+        // Перевірка стану входу при завантаженні сторінки
+        checkLogin();
+
+        function addAutoPart() {
+          const date_create = new Date().toLocaleDateString('en-GB');
+          const autopartsTitle = document.getElementById("autopartTitleInput").value;
+          const autopartsPrice = document.getElementById("autopartPriceInput").value;
+          const autopartsImage = document.getElementById("autopartImageInput").files[0];
+
+          if (!autopartsTitle || !autopartsPrice || !autopartsImage) {
+            document.getElementById("warm_text").innerHTML = "Будь ласка, надайте заголовок, вміст та зображення для автозапчастин";
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            const imageBase64 = reader.result;
+            autopartsIdCounter += 1;
+            const newAutopartsItem = {
+              id: autopartsIdCounter,
+              image: imageBase64,
+              title: autopartsTitle,
+              price: autopartsPrice,
+              date_of_public: date_create,
+            };
+
+            autopartsData.push(newAutopartsItem);
+            saveAutopartsData();
+            clearAutopartsForm();
+            displayAutoParts();
+          };
+          document.getElementById("warm_text").innerHTML = "";
+          reader.readAsDataURL(autopartsImage);
+        }
+        function editAutoParts() {
+          document.getElementById("addAutopartsButton").style.display = "none";
+          // if (!loggedIn) {
+          //   alert("Будь ласка, увійдіть, щоб редагувати автозапчастини.");
+          //   return;
+          // }
+          const autopartsId = parseInt(prompt("Введіть ідентифікатор (номер) автозапчастин, які потрібно редагувати:"));
+          const existingAutopartsItem = autopartsData.find(item => item.id === autopartsId);
+
+          if (!existingAutopartsItem) {
+            document.getElementById("warm_text").innerHTML = "Автозапчастин не знайдено";
+            return;
+          }
+
+          document.getElementById("autopartTitleInput").value = existingAutopartsItem.title;
+          document.getElementById("autopartPriceInput").value = existingAutopartsItem.price;
+          //document.getElementById("autopartImageInput").files[0] = existingAutopartsItem.image;
+          editAutopartButton.removeEventListener("click", editAutoParts);
+
+          function editAutopartsPress(){
+              const autopartsTitle = document.getElementById("autopartTitleInput").value;
+              const autopartsPrice = document.getElementById("autopartPriceInput").value;
+              const autopartsImage = document.getElementById("autopartImageInput").files[0];
+              if (!autopartsTitle || !autopartsPrice || !autopartsImage) {
+                document.getElementById("warm_text").innerHTML = "Будь ласка, надайте заголовок, вміст та зображення для автозапчастин";
+                return;
+              }
+              existingAutopartsItem.title = autopartsTitle;
+              existingAutopartsItem.price = autopartsPrice;
+              editAutopartButton.removeEventListener("click", editAutopartsPress);
+              editAutopartButton.addEventListener("click", editAutoParts);
+
+              saveAutopartsData();
+              clearAutopartsForm();
+              displayAutoparts();
+
+              document.getElementById("addAutopartsButton").style.display = "block";
+            }
+          document.getElementById("warm_text").innerHTML = "";
+          editAutopartButton.addEventListener("click", editAutopartsPress);
+        }
+
+        function signIn() {
+          const username = document.getElementById("usernameInput").value;
+          const password = document.getElementById("passwordInput").value;
+
+          if (localStorage.getItem(username) === password) {
+            loggedIn = true;
+            currentUser = username;
+           saveLogin();
+            document.getElementById("autopartsForm").style.display = "none";
+            document.getElementById("Autoparts-List").style.display = "grid";
+            document.getElementById("Novelty-List").style.display = "grid";
+            document.getElementById("novelty-products").style.display = "block";
+            document.getElementById("autoparts-products").style.display = "block";
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("logoutButton").style.display = "block";
+            document.getElementById("loginButton").style.display = "none";
+            document.getElementById("register_Button").style.display = "none";
+          } else {
+            alert("Невірний логін або пароль");
+          }
+        }
+
+        function register() {
+          const username = document.getElementById("usernameInput").value;
+          const password = document.getElementById("passwordInput").value;
+
+          if (localStorage.getItem(username)) {
+            alert("Ім'я даного користувача існує");
+          } else {
+            localStorage.setItem(username, password);
+            alert("Реєстрація успішна. Тепер ви можете увійти за допомогою нового облікового запису.");
+          }
+        }
+        function logout() {
+          loggedIn = false;
+          currentUser = null;
+          localStorage.removeItem("loggedIn");
+          localStorage.removeItem("currentUser");
+          showLoginForm();
+        }
+        function checkLogin() {
+          if (localStorage.getItem("loggedIn")) {
+            loggedIn = true;
+            currentUser = localStorage.getItem("currentUser");
+            document.getElementById("autopartsForm").style.display = "none";
+            document.getElementById("novelty-products").style.display = "block";
+            document.getElementById("autoparts-products").style.display = "block";
+            document.getElementById("Autoparts-List").style.display = "grid";
+            document.getElementById("Novelty-List").style.display = "grid";
+            document.getElementById("loginForm").style.display = "none";
+            document.getElementById("logoutButton").style.display = "block";
+            document.getElementById("loginButton").style.display = "none";
+            document.getElementById("register_Button").style.display = "none";
+          } else {
+            showLoginForm();
+            document.getElementById("autoparts-products").style.display = "none";
+          }
+        }
+
+       function saveLogin() {
+         localStorage.setItem("loggedIn", "true");
+         localStorage.setItem("currentUser", currentUser);
+       }
+
+        function saveAutopartsData() {
+          localStorage.setItem("autopartsData", JSON.stringify(autopartsData));
+          //autopartsIdCounter = autopartsData.length;
+        }
+
+        function loadAutopartsData() {
+          const storedAutopartsData = localStorage.getItem("autopartsData");
+          if (storedAutopartsData) {
+            autopartsData = JSON.parse(storedAutopartsData);
+            autopartsData.sort((a, b) => new Date(b.date_of_public) - new Date(a.date_of_public));
+          }
+          console.log(autopartsData);
+          console.log(autopartsData.length);
+          autopartsIdCounter = autopartsData.length;
+          console.log(autopartsIdCounter);
+        }
+
+        function showLoginForm() {
+          document.getElementById("autopartsForm").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "none";
+          document.getElementById("Novelty-List").style.display = "none";
+          document.getElementById("novelty-products").style.display = "none";
+          document.getElementById("autoparts-products").style.display = "none";
+          document.getElementById("loginForm").style.display = "block";
+          document.getElementById("loginButton").style.display = "block";
+          document.getElementById("register_Button").style.display = "block";
+          document.getElementById("addProduct").style.display = "none";
+          document.getElementById("editProduct").style.display = "none";
+          document.getElementById("logoutButton").style.display = "none";
+        }
+        function showLoginFormEnter() {
+          document.getElementById("loginForm").style.display = "block";
+          document.getElementById("autopartsForm").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "none";
+          document.getElementById("Novelty-List").style.display = "none";
+          document.getElementById("novelty-products").style.display = "none";
+          document.getElementById("autoparts-products").style.display = "none";
+          document.getElementById("loginButton").style.display = "block";
+          document.getElementById("registerButton").style.display = "none";
+          document.getElementById("signInButton").style.display = "block";
+          document.getElementById("register_Button").style.display = "block";
+          document.getElementById("logoutButton").style.display = "none";
+        }
+        function showRegisterForm() {
+          document.getElementById("loginForm").style.display = "block";
+          document.getElementById("signInButton").style.display = "none";
+          document.getElementById("registerButton").style.display = "block";
+          document.getElementById("autopartsForm").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "none";
+          document.getElementById("Novelty-List").style.display = "none";
+          document.getElementById("novelty-products").style.display = "none";
+          document.getElementById("autoparts-products").style.display = "none";
+          document.getElementById("loginButton").style.display = "block";
+          document.getElementById("register_Button").style.display = "block";
+          document.getElementById("logoutButton").style.display = "none";
+          document.getElementById("addProduct").style.display = "none";
+          document.getElementById("editProduct").style.display = "none";
+          //document.getElementById("ShowOrHideAddEditNews").style.display = "none";
+        }
+        function showAddEditAutopartsForm(){
+          document.getElementById("autopartsForm").style.display = "block";
+          document.getElementById("autopartTitleInput").style.display = "block";
+          document.getElementById("autopartPriceInput").style.display = "block";
+          document.getElementById("autopartImageInput").style.display = "block";
+          document.getElementById("addProduct").style.display = "block";
+          document.getElementById("editProduct").style.display = "block";
+          document.getElementById("Autoparts-List").style.display = "none";
+          document.getElementById("Novelty-List").style.display = "none";
+          document.getElementById("novelty-products").style.display = "none";
+          document.getElementById("autoparts-products").style.display = "none";
+          document.getElementById("warm_text").innerHTML = "";
+          //ShowOrHideAddEditAutopartsButton.removeEventListener("click", showAddEditAutopartsForm);
+          //ShowOrHideAddEditAutopartsButton.addEventListener("click", hideAddEditAutopartsForm);
+        }
+        function hideAddEditAutopartsForm(){
+          document.getElementById("autopartsForm").style.display = "none";
+          document.getElementById("autopartTitleInput").style.display = "none";
+          document.getElementById("autopartPriceInput").style.display = "none";
+          document.getElementById("autopartImageInput").style.display = "none";
+          document.getElementById("addProduct").style.display = "none";
+          document.getElementById("editProduct").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "grid";
+          document.getElementById("Novelty-List").style.display = "grid";
+          document.getElementById("novelty-products").style.display = "block";
+          document.getElementById("autoparts-products").style.display = "block";
+          //ShowOrHideAddEditAutopartsButton.removeEventListener("click", hideAddEditAutopartsForm);
+          //ShowOrHideAddEditAutopartsButton.addEventListener("click", showAddEditAutopartsForm);
+        }
+        function showAutopartsForm() {
+          document.getElementById("editAutopartsButton").style.display = "none";
+          document.getElementById("addAutopartsButton").style.display = "block";
+          document.getElementById("autopartsForm").style.display = "inline-block";
+          addProductButton.removeEventListener("click", showAutopartsForm);
+          addProductButton.addEventListener("click", clearAutopartsForm);
+          editProductButton.removeEventListener("click", clearAutopartsForm);
+          editProductButton.addEventListener("click", showAutopartsFormEdit);
+          document.getElementById("Autoparts-List").style.display = "none";
+          document.getElementById("Novelty-List").style.display = "none";
+          document.getElementById("novelty-products").style.display = "none";
+          document.getElementById("autoparts-products").style.display = "none";
+          document.getElementById("loginForm").style.display = "none";
+          document.getElementById("logoutButton").style.display = "block";
+          document.getElementById("loginButton").style.display = "none";
+          document.getElementById("register_Button").style.display = "none";
+          document.getElementById("warm_text").innerHTML = "";
+        }
+        function showAutopartsFormEdit() {
+          document.getElementById("addAutopartsButton").style.display = "none";
+          document.getElementById("editAutopartsButton").style.display = "block";
+          document.getElementById("autopartsForm").style.display = "inline-block";
+          editProductButton.removeEventListener("click", showAutopartsFormEdit);
+          editProductButton.addEventListener("click", clearAutopartsForm);
+          addProductButton.removeEventListener("click", clearAutopartsForm);
+          addProductButton.addEventListener("click", showAutopartsForm);
+          document.getElementById("Autoparts-List").style.display = "none";
+          document.getElementById("Novelty-List").style.display = "none";
+          document.getElementById("novelty-products").style.display = "none";
+          document.getElementById("autoparts-products").style.display = "none";
+          document.getElementById("warm_text").innerHTML = "";
+        }
+        function clearAutopartsForm() {
+          document.getElementById("addAutopartsButton").style.display = "block";
+          document.getElementById("editAutopartsButton").style.display = "block";
+          document.getElementById("autopartsForm").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "grid";
+          document.getElementById("Novelty-List").style.display = "grid";
+          document.getElementById("novelty-products").style.display = "block";
+          document.getElementById("autoparts-products").style.display = "block";
+          addProductButton.removeEventListener("click", clearAutopartsForm);
+          addProductButton.addEventListener("click", showAutopartsForm);
+          editProductButton.removeEventListener("click", clearAutopartsForm);
+          editProductButton.addEventListener("click", showAutopartsFormEdit);
+          document.getElementById("autopartTitleInput").value = "";
+          document.getElementById("autopartPriceInput").value = "";
+          document.getElementById("autopartImageInput").value = "";
+        }
+        function displayAutoParts(autopartsArray = autopartsData) {
+          if (autopartsArray.length === 0) {
+            autopartsList.innerHTML = "<p>Немає доступних автозапчастин</p>";
+            return;
+          }
+
+          autopartsArray.forEach(autoparts => {
+            const autopartsItem = document.createElement("div");
+            autopartsItem.classList.add('product-box');
+            autopartsItem.innerHTML = `
+              <img src="${autoparts.image}" alt="" class="product-img" id="product-img"/>
+                        <h2 class="product-title" id="autopart-text">${autoparts.title}</h2>
+                        <span class="price" id="autopart-price">${autoparts.price} ₴</span>
+                        <p class="price" style="font-style: italic;">${autoparts.date_of_public}</p>
+                        <i class="bx bx-shopping-bag add-cart" id="add-to-cart"></i>
+            `;
+            const addToCartButton = autopartsItem.querySelector(".add-cart");
+            addToCartButton.addEventListener("click", () => {
+                const title = autoparts.title;
+                const price = autoparts.price + " ₴";
+                const productImg = autoparts.image;
+                addProductToCart(title, price, productImg);
+                updatetotal();
+            });
+            autopartsList.appendChild(autopartsItem);
+          });
+        }
+        function displayAutoPartsToday(noveltyautopartsArray = autopartsData) {
+            const currentDate = new Date().toLocaleDateString('en-GB');
+
+            const todayAutoparts = noveltyautopartsArray.filter(autopart => autopart.date_of_public === currentDate);
+
+            if (todayAutoparts.length > 0) {
+                document.getElementById("novelty-products").style.display = "block";
+                const noveltyProducts = document.getElementById("novelty-products");
+                noveltyList.innerHTML = ""; // Очищення наявних елементів
+
+                todayAutoparts.forEach(autoparts => {
+                    const autopartsItem = document.createElement("div");
+                    autopartsItem.classList.add('product-box');
+                    autopartsItem.innerHTML = `
+                      <img src="${autoparts.image}" alt="" class="product-img" id="product-img"/>
+                                <h2 class="product-title" id="autopart-text">${autoparts.title}</h2>
+                                <span class="price" id="autopart-price">${autoparts.price} ₴</span>
+                                <p class="price" style="font-style: italic;">${autoparts.date_of_public}</p>
+                                <i class="bx bx-shopping-bag add-cart" id="add-to-cart"></i>
+                                <img src="images/new-icon.png" class="new-product" />
+                    `;
+                    const addToCartButton = autopartsItem.querySelector(".add-cart");
+                    addToCartButton.addEventListener("click", () => {
+                        const title = autoparts.title;
+                        const price = autoparts.price + " ₴";
+                        const productImg = autoparts.image;
+                        addProductToCart(title, price, productImg);
+                        updatetotal();
+                    });
+                    noveltyList.appendChild(autopartsItem);
+                });
+            } else {
+                document.getElementById("novelty-products").style.display = "none";
+                document.getElementById("autoparts-products").style.display = "block";
+            }
+        }
+        // Кошик
+        let cartIcon = document.querySelector("#cart-icon");
+        let cart = document.querySelector(".cart");
+        let closeCart = document.querySelector("#close-cart");
+
+        cartIcon.onclick = () => {
+            cart.classList.add("active");
+        };
+        closeCart.onclick = () => {
+            cart.classList.remove("active");
+        };
+
+        function openNav() {
+          cart.style.width = "275px";
+        }
+
+        function closeNav() {
+          cart.style.width = "0";
+        }
+
+        cartIcon.addEventListener("click", openNav);
+        closeCart.addEventListener("click", closeNav);
+
+        if (document.readyState == "loading"){
+            document.addEventListener("DOMContentLoaded", ready);
+        } else {
+            ready();
+        }
+
+        function ready(){
+            var removeCartButtons = document.getElementsByClassName("cart-remove");
+            console.log(removeCartButtons);
+            for (var i = 0; i < removeCartButtons.length; i++){
+                var button = removeCartButtons[i];
+                button.addEventListener("click", removeCartItem);
+            }
+            //
+            var quantityInputs = document.getElementsByClassName("cart-quantity");
+            for (var i = 0; i < quantityInputs.length; i++){
+                var input = quantityInputs[i];
+                input.addEventListener("change",quantityChanged);
+            }
+            //
+            var addCart = document.getElementsByClassName("add-cart");
+            for (var i = 0; i < addCart.length; i++)
+            {
+                var button = addCart[i];
+                button.addEventListener("click",addCartClicked);
+            }
+            //
+            document.getElementsByClassName("btn-buy")[0].addEventListener("click",buyButtonClicked);
+        }
+        function buyButtonClicked(){
+            alert("Ваше замовлення розміщено");
+            var cartContent = document.getElementsByClassName("cart-content")[0];
+            while (cartContent.hasChildNodes()){
+                cartContent.removeChild(cartContent.firstChild);
+            }
+            updatetotal();
+        }
+        function removeCartItem(event){
+            var buttonClicked = event.target;
+            buttonClicked.parentElement.remove();
+            updatetotal();
+        }
+        function quantityChanged(event){
+            var input = event.target;
+            if (isNaN(input.value) || input.value <= 0){
+                input.value = 1;
+            }
+            updatetotal();
+        }
+
+        function addCartClicked(event){
+            var button = event.target;
+            var shopProducts = button.parentElement;
+            var title = shopProducts.getElementsByClassName("product-title")[0].innerText;
+            var price = shopProducts.getElementsByClassName("price")[0].innerText;
+            var productImg = shopProducts.getElementsByClassName("product-img")[0].src;
+            addProductToCart(title, price, productImg);
+            updatetotal();
+        }
+
+        function addProductToCart(title, price, productImg){
+            var cartShopBox = document.createElement("div");
+            cartShopBox.classList.add("cart-box");
+            var cartItems = document.getElementsByClassName("cart-content")[0];
+            var cartItemsNames = cartItems.getElementsByClassName("cart-product-title");
+            for (var i = 0; i < cartItemsNames.length; i++){
+                if (cartItemsNames[i].innerText == title){
+                    alert("Ви вже додали цей товар до кошика!");
+                    return;
+                }
+            }
+            var cartBoxContent = `<img src="${productImg}" alt="" class="cart-img"/>
+                                    <div class="detail-box">
+                                        <div class="cart-product-title">${title}</div>
+                                        <div class="cart-price">${price}</div>
+                                        <input type="number" value="1" class="cart-quantity">
+                                    </div>
+                                    <i class="bx bxs-trash-alt cart-remove"></i>`;
+            cartShopBox.innerHTML = cartBoxContent;
+            cartItems.append(cartShopBox);
+            cartShopBox.getElementsByClassName("cart-remove")[0].addEventListener("click", removeCartItem);
+            cartShopBox.getElementsByClassName("cart-quantity")[0].addEventListener("change", quantityChanged);
+        }
+
+        function updatetotal(){
+            var cartContent = document.getElementsByClassName("cart-content")[0];
+            var cartBoxes = cartContent.getElementsByClassName("cart-box");
+            var total = 0;
+            for (var i = 0; i < cartBoxes.length; i++){
+                var cartBox = cartBoxes[i];
+                var priceElement = cartBox.getElementsByClassName("cart-price")[0];
+                var quantityElement = cartBox.getElementsByClassName("cart-quantity")[0];
+                var price = parseFloat(priceElement.innerText.replace("₴",""));
+                var quantity = quantityElement.value;
+                total = total + price * quantity;
+            }
+            total = Math.round(total * 100) / 100;
+            document.getElementsByClassName("total-price")[0].innerText = total + " ₴";
+        }
+
+        function handleSearch() {
+          const searchTerm = searchInput.value.trim().toLowerCase();
+          const autopartsList = document.getElementById("Autoparts-List");
+          autopartsList.innerHTML = ""; // Очистити існуючі елементи автозапчастин
+
+          if (searchTerm === "") {
+            // Якщо пошук порожній, відобразити всі автозапчастини
+            displayAutoParts(autopartsData);
+            return;
+          }
+
+          // Фільтр autopartsData на основі пошукового терміна
+          const filteredAutoparts = autopartsData.filter((autoparts) => {
+            const title = autoparts.title.toLowerCase();
+            const price = autoparts.price.toLowerCase();
+            return title.includes(searchTerm) || price.includes(searchTerm);
+          });
+
+          // Відображення відфільтрованих автозапчастин
+          displaySearchAutoparts(filteredAutoparts);
+        }
+        function displaySearchAutoparts(autopartsArray) {
+          document.getElementById("currentAutoparts").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "grid";
+          const autopartsList = document.getElementById("Autoparts-List");
+          autopartsList.innerHTML = ""; // Очистити існуючі елементи автозапчастин
+
+          // Прокласти через autopartsArray і створити HTML елементи для їх відображення
+          autopartsArray.forEach((autoparts) => {
+            const autopartsItem = document.createElement("div");
+            autopartsItem.classList.add('product-box');
+            autopartsItem.innerHTML = `
+              <img src="${autoparts.image}" alt="" class="product-img" id="product-img"/>
+                        <h2 class="product-title" id="autopart-text">${autoparts.title}</h2>
+                        <span class="price" id="autopart-price">${autoparts.price} ₴</span>
+                        <p class="price" style="font-style: italic;">${autoparts.date_of_public}</p>
+                        <i class="bx bx-shopping-bag add-cart" id="add-to-cart"></i>
+            `;
+            const addToCartButton = autopartsItem.querySelector(".add-cart");
+            addToCartButton.addEventListener("click", () => {
+                const title = autoparts.title;
+                const price = autoparts.price + " ₴";
+                const productImg = autoparts.image;
+                addProductToCart(title, price, productImg);
+                updatetotal();
+            });
+            autopartsList.appendChild(autopartsItem);
+          });
+        }
+        // Функція фільтрації та відображення автозапчастин за категоріями
+        function displayAutopartsByCategory(category) {
+          document.getElementById("currentAutoparts").style.display = "none";
+          document.getElementById("Autoparts-List").style.display = "grid";
+          const autopartsList = document.getElementById("Autoparts-List");
+          autopartsList.innerHTML = ""; // Очистити існуючі елементи автозапчастин
+
+          const filteredAutoparts = autopartsData.filter((autoparts) => {
+            const lowerTitle = autoparts.title.toLowerCase();
+            if (category === "Автозапчастини") {
+              // Фільтр автозапчастин по категорії "Автозапчастини"
+              console.log(allpartsauto.some((word) => lowerTitle.includes(word)));
+              return allpartsauto.some((word) => lowerTitle.includes(word));
+            } else if (category === "Авто") {
+              // Фільтр автозапчастин по категорії "Авто"
+              console.log(modelCars.some((word) => lowerTitle.includes(word)));
+              return modelCars.some((word) => lowerTitle.includes(word));
+            }
+            else {
+              // Фільтр автозапчастин по всіх категоріях
+              console.log(modelCars.some((word) => lowerTitle.includes(word)));
+              return modelCars.some((word) => lowerTitle.includes(word));
+            }
+          });
+
+          // Відображення відфільтрованих автозапчастин
+          displayCurrentAutoparts(filteredAutoparts);
+        }
+        function displayCurrentAutoparts(autopartsArray) {
+          autopartsList.innerHTML = "";
+          if (autopartsArray.length === 0) {
+            autopartsList.innerHTML = "<p>Немає доступних даних</p>";
+            return;
+          }
+
+          autopartsArray.forEach(autoparts => {
+            const autopartsItem = document.createElement("div");
+            autopartsItem.classList.add('product-box');
+            autopartsItem.innerHTML = `
+              <img src="${autoparts.image}" alt="" class="product-img" id="product-img"/>
+                        <h2 class="product-title" id="autopart-text">${autoparts.title}</h2>
+                        <span class="price" id="autopart-price">${autoparts.price} ₴</span>
+                        <p class="price" style="font-style: italic;">${autoparts.date_of_public}</p>
+                        <i class="bx bx-shopping-bag add-cart" id="add-to-cart"></i>
+            `;
+            const addToCartButton = autopartsItem.querySelector(".add-cart");
+            addToCartButton.addEventListener("click", () => {
+                const title = autoparts.title;
+                const price = autoparts.price + " ₴";
+                const productImg = autoparts.image;
+                addProductToCart(title, price, productImg);
+                updatetotal();
+            });
+            autopartsList.appendChild(autopartsItem);
+          });
+        }
+        loadAutopartsData();
+        displayAutoPartsToday();
+        displayAutoParts();
+    });
+</script>
+    <header>
+        <div class="nav container upper">
+            <img src="images/imgonline-com-ua-Transparent-backgr-PzvsrPq3CEMhKe.png" class="logo-icon" style="text-align: left"/>
+            <span class="logo" style="text-align: left">OptimusVIpShop</span>
+            <a class="menu" id="addProduct">Додати товар</a>
+            <a class="menu" id="editProduct">Редагувати товар</a>
+            <a class="menu" id="loginButton">Логін</a>
+            <a class="menu" id="register_Button">Регістрація</a>
+            <a class="menu" id="logoutButton">Вихід</a>
+            <div class="cart">
+                <h2 class="cart-title">Ваш кошик</h2>
+                <div class="cart-content" id="cartcontent">
+                    <div class="cart-box" id="cartbox">
+                        <img src="images/light_volkswagen_golf_xenon.png" class="cart-img"/>
+                        <div class="detail-box">
+                            <div class="cart-product-title">Права передня фара VW GOLF XENON Оригінал</div>
+                            <div class="cart-price">12000 ₴</div>
+                            <input type="number" value="1" class="cart-quantity" id="cartquantity">
+                        </div>
+                        <i class="bx bxs-trash-alt cart-remove" id="cartremove"></i>
+                    </div>
+                </div>
+                <div class="total">
+                    <div class="total-title">Загалом</div>
+                    <div class="total-price" id="totalprice">0 ₴</div>
+                </div>
+                <button type="button" class="btn-buy" id="btnbuy">Купити зараз</button>
+                <i class="bx bx-x" id="close-cart"></i>
+            </div>
+        </div>
+    </header>
+    <div class="row">
+        <div class="column" style="width:22%;background-color:#AEAEAE; min-height:100em;border-radius:25px">
+            <div class="menu" style="margin-top: 50%; margin-bottom: 50%; margin-right: 12px;">
+                <i class='bx bxs-car-mechanic' id="cart-icon"></i>
+                <div class="search-box">
+                    <div class="search-icon"><i class="fa fa-search search-icon"></i></div>
+                    <form action="" class="search-form">
+                        <input type="text" placeholder="Пошук" id="search" autocomplete="off">
+                    </form>
+                    <svg class="search-border" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:a="http://ns.adobe.com/AdobeSVGViewerExtensions/3.0/" x="0px" y="0px" viewBox="0 0 671 111" style="enable-background:new 0 0 671 111;"
+                     xml:space="preserve">
+                  <path class="border" d="M335.5,108.5h-280c-29.3,0-53-23.7-53-53v0c0-29.3,23.7-53,53-53h280"/>
+                  <path class="border" d="M335.5,108.5h280c29.3,0,53-23.7,53-53v0c0-29.3-23.7-53-53-53h-280"/>
+                </svg>
+                    <div class="go-icon"><i class="fa fa-arrow-right"></i></div>
+                </div>
+                <br>
+                <h3>Виберіть категорію:</h3>
+                <ul>
+                    <li><a href="" id="all_products">Усі товари</a></li><br>
+                    <li><a href="#Autoparts" id="autoparts_link">Автозапчастини</a></li><br>
+                    <li><a href="#Auto" id="auto_link">Авто</a></li>
+                </ul>
+            </div>
+        </div>
+    <!-- Магазин автозапчастин -->
+        <div class="column" id='products' style="width:80%;background-color:#C5C5C5; min-height:100em;border-radius:25px;margin-left: auto; margin-right: auto; text-align: center;">
+            <div id="autopartsForm" class="AutopartsForm upper" style="display: none;">
+              <textarea id="autopartTitleInput" class="autopartContenttextarea" placeholder="Назва товарів"></textarea>
+              <input type="text" id="autopartPriceInput" placeholder="Вартість товару" class="autoparts-title">
+              <input type="file" id="autopartImageInput">
+              <a class="menu" style="margin-top: 25px; margin-bottom: 25px;" id="addAutopartsButton">Додати товар</a>
+              <a class="menu" style="margin-top: 25px; margin-bottom: 25px;" id="editAutopartsButton">Редагувати товар</a>
+                <span id="warm_text" style="padding: 14px 16px; line-height: 1.5em; text-align: justify; font-size: 16px; color:#680C07;"></span>
+            </div>
+            <!-- -->
+           <div class="login-form" id="loginForm" style="display:none;">
+            <form>
+            <h1 id="name_login">Вхід</h1>
+            <div class="content">
+            <div class="input-field">
+                <i class='bx bx-user' style="color:black"></i>
+            <input type="text" placeholder="Ім'я користувача" autocomplete="nope" id="usernameInput">
+            </div>
+            <div class="input-field">
+                <i class='bx bx-lock-alt' style="color:black"></i>
+            <input type="password" placeholder="Пароль" id="passwordInput">
+            </div>
+            </div>
+            <div class="action">
+            <button id="signInButton">Вхід</button>
+            <button id="registerButton">Реєстрація</button>
+            </div>
+            </form>
+            </div><br>
+            <div style="width: 100%; border-radius:12px;border-style:solid hidden solid hidden; border-size: 2px; border-color: #680C07;" id="novelty-products">
+                <section class="store container">
+                    <h2 class="section-title">Новинки</h2>
+                    <div class="store-content" id="Novelty-List" style="margin-bottom: 50px;">
+
+                    </div>
+                </section>
+            </div>
+            <section class="store container" id="autoparts-products" style="margin-bottom: 50px;">
+                <h2 class="section-title">Магазин автозапчастин</h2>
+                <div class="store-content" id="Autoparts-List">
+                    <div class="product-box">
+                        <img src="images/light_volkswagen_golf_xenon.png" alt="" class="product-img"/>
+                        <h2 class="product-title" id="autopart-text">Права передня фара VW GOLF XENON Оригінал</h2>
+                        <span class="price" id="autopart-price">12000 ₴</span>
+                        <i class="bx bx-shopping-bag add-cart"></i>
+                    </div>
+                    <div class="product-box">
+                        <img src="images/display_audi_a4_pc4.png" alt="" class="product-img"/>
+                        <h2 class="product-title">Дислпей екрана AUDI A4 PC4 Оригінал</h2>
+                        <span class="price">25000 ₴</span>
+                        <i class="bx bx-shopping-bag add-cart"></i>
+                    </div>
+                </div>
+            </section>
+            <section id="currentAutoparts" style="display: none;margin-bottom: 50px;">
+              <!-- У цьому розділі буде показано поточні автозапчастини -->
+            </section>
+        </div>
+    </div>
+<div class="footer">
+      <div class="heading">
+      </div>
+
+      <footer>
+        © 2023 All rights reserved.
+      </footer>
+    </div>
+</body>
+<!--<script src="js/main.js"></script>-->
+</html>
